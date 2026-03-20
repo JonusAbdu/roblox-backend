@@ -75,15 +75,17 @@ app.get('/api/game/:universeId', async (req, res) => {
   }
 })
 
-// Get thumbnail
+// Get game thumbnails (multiple) + icon
 app.get('/api/thumbnail/:universeId', async (req, res) => {
   try {
     const { universeId } = req.params
-    const response = await axios.get(
-      `https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${universeId}&size=768x432&format=Png&isCircular=false`
-    )
-    const url = response.data.data[0]?.thumbnails[0]?.imageUrl || null
-    res.json({ url })
+    const [thumbRes, iconRes] = await Promise.all([
+      axios.get(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${universeId}&size=768x432&format=Png&isCircular=false`),
+      axios.get(`https://thumbnails.roblox.com/v1/games/icons?universeIds=${universeId}&size=512x512&format=Png&isCircular=false`)
+    ])
+    const thumbnails = thumbRes.data.data[0]?.thumbnails?.map(t => t.imageUrl) || []
+    const icon = iconRes.data.data[0]?.imageUrl || null
+    res.json({ thumbnails, icon })
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch thumbnail' })
   }
